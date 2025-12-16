@@ -26,8 +26,8 @@ export default function ToneVisualizer({ data }: ToneVisualizerProps) {
 
         // Draw Bars
         const gradient = ctx.createLinearGradient(0, height, 0, 0);
-        gradient.addColorStop(0, '#bd93f9');
-        gradient.addColorStop(1, '#64ffda');
+        gradient.addColorStop(0, '#15803d'); // Green-700
+        gradient.addColorStop(1, '#bef264'); // Lime-300
 
         ctx.fillStyle = gradient;
 

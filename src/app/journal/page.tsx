@@ -70,10 +70,10 @@ export default function JournalPage() {
                         )}
                         <div
                             className={`
-                        max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed
+                        max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed shadow-sm
                         ${m.role === 'user'
-                                    ? 'bg-primary text-black rounded-tr-none'
-                                    : 'bg-white/10 border border-white/5 rounded-tl-none'}
+                                    ? 'bg-[#15803d] text-white rounded-tr-none'
+                                    : 'bg-white border border-green-100 text-green-900 rounded-tl-none'}
                     `}
                         >
                             {m.content}
@@ -82,10 +82,10 @@ export default function JournalPage() {
                 ))}
                 {loading && (
                     <div className="flex justify-start">
-                        <div className="bg-white/5 p-4 rounded-2xl rounded-tl-none flex gap-2">
-                            <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></span>
-                            <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-100"></span>
-                            <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-200"></span>
+                        <div className="bg-white p-4 rounded-2xl rounded-tl-none flex gap-2 border border-green-100">
+                            <span className="w-2 h-2 bg-green-400 rounded-full animate-bounce"></span>
+                            <span className="w-2 h-2 bg-green-400 rounded-full animate-bounce delay-100"></span>
+                            <span className="w-2 h-2 bg-green-400 rounded-full animate-bounce delay-200"></span>
                         </div>
                     </div>
                 )}
@@ -96,13 +96,13 @@ export default function JournalPage() {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="Type your thoughts..."
-                    className="w-full bg-white/5 border border-white/10 rounded-full py-4 px-6 focus:outline-none focus:border-primary transition-colors text-white placeholder-gray-500"
+                    className="w-full bg-white border border-green-200 rounded-full py-4 px-6 focus:outline-none focus:border-[#15803d] transition-colors text-[#064e3b] placeholder-green-700/40 shadow-sm"
                     autoFocus
                 />
                 <button
                     type="submit"
                     disabled={!input || loading}
-                    className="absolute right-2 top-2 bottom-2 aspect-square rounded-full bg-primary text-black flex items-center justify-center disabled:opacity-50 disabled:grayscale transition-all hover:scale-105"
+                    className="absolute right-2 top-2 bottom-2 aspect-square rounded-full bg-[#15803d] text-white flex items-center justify-center disabled:opacity-50 disabled:grayscale transition-all hover:scale-105 shadow-md"
                 >
                     →
                 </button>

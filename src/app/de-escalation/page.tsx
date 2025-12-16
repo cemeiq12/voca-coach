@@ -83,7 +83,7 @@ export default function DeEscalationPage() {
                             className="h-full transition-all duration-200"
                             style={{
                                 width: `${arousalLevel * 100}%`,
-                                backgroundColor: arousalLevel > 0.6 ? '#ff5555' : '#64ffda'
+                                backgroundColor: arousalLevel > 0.6 ? '#ff5555' : '#22c55e'
                             }}
                         />
                     </div>

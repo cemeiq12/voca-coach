@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
+  <!-- Center Image Circle -->
+  <circle cx="250" cy="250" r="100" fill="#D1FAE5" opacity="0.2"/>
+  <circle cx="250" cy="250" r="150" fill="none" stroke="#34D399" stroke-width="2" stroke-dasharray="10 5"/>
+  
+  <!-- Connections -->
+  <line x1="250" y1="100" x2="250" y2="150" stroke="#FFFFFF" stroke-width="2"/>
+  <line x1="400" y1="250" x2="350" y2="250" stroke="#FFFFFF" stroke-width="2"/>
+  <line x1="250" y1="400" x2="250" y2="350" stroke="#FFFFFF" stroke-width="2"/>
+  <line x1="100" y1="250" x2="150" y2="250" stroke="#FFFFFF" stroke-width="2"/>
+
+  <!-- Satellite Circles -->
+  <!-- Top: Anxiety -->
+  <circle cx="250" cy="80" r="40" fill="#FFFFFF"/>
+  <path d="M235 80 Q250 60 265 80 T295 80" stroke="#10B981" stroke-width="2" fill="none" transform="translate(-20, 0) scale(0.8)"/>
+  <text x="250" y="30" text-anchor="middle" fill="#FFFFFF" font-size="12" font-family="sans-serif" font-weight="bold">ANXIETY</text>
+  
+  <!-- Right: Shaky Voice -->
+  <circle cx="420" cy="250" r="40" fill="#FFFFFF"/>
+  <path d="M400 250 L410 230 L420 270 L430 240 L440 250" stroke="#10B981" stroke-width="2" fill="none"/>
+  <text x="420" y="200" text-anchor="middle" fill="#FFFFFF" font-size="12" font-family="sans-serif" font-weight="bold">SHAKY VOICE</text>
+
+  <!-- Bottom: Heart Rate -->
+  <circle cx="250" cy="420" r="40" fill="#FFFFFF"/>
+  <path d="M230 420 Q240 400 250 420 T270 420" stroke="#10B981" stroke-width="2" fill="none"/>
+  <text x="250" y="480" text-anchor="middle" fill="#FFFFFF" font-size="12" font-family="sans-serif" font-weight="bold">HEART RATE</text>
+  
+  <!-- Left: Confusion -->
+  <circle cx="80" cy="250" r="40" fill="#FFFFFF"/>
+  <text x="80" y="255" text-anchor="middle" font-size="24">?</text>
+  <text x="80" y="200" text-anchor="middle" fill="#FFFFFF" font-size="12" font-family="sans-serif" font-weight="bold">CONFUSION</text>
+</svg>
