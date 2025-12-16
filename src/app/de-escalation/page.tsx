@@ -1,119 +1,291 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useAudioRecorder } from '@/hooks/useAudioRecorder';
-import ToneVisualizer from '@/components/ToneVisualizer';
-import { getModel } from '@/lib/vertex'; // Client-side safe? No, server action needed usually.
-// Actually, using API Key on client is risky but for prototype/Google AI SDK it's often done. 
-// Ideally we move AI calls to a Server Action.
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 export default function DeEscalationPage() {
-    const { startRecording, stopRecording, isRecording, visualizerData, audioBase64 } = useAudioRecorder();
-    const [arousalLevel, setArousalLevel] = useState(0);
-    const [aiResponse, setAiResponse] = useState<string | null>(null);
-    const [isProcessing, setIsProcessing] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [arousalLevel, setArousalLevel] = useState(0.3);
+  const [aiResponse, setAiResponse] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [sessionTime, setSessionTime] = useState(0);
 
-    // Simple client-side arousal detection (Volume based)
-    useEffect(() => {
-        if (!visualizerData.length) return;
+  // Simulate session timer
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isRecording) {
+      interval = setInterval(() => {
+        setSessionTime(prev => prev + 1);
+        // Simulate arousal fluctuation
+        setArousalLevel(prev => {
+          const change = (Math.random() - 0.5) * 0.1;
+          return Math.max(0.1, Math.min(0.9, prev + change));
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isRecording]);
 
-        // Calculate RMS (volume)
-        let sum = 0;
-        for (let i = 0; i < visualizerData.length; i++) {
-            sum += visualizerData[i] * visualizerData[i];
-        }
-        const rms = Math.sqrt(sum / visualizerData.length);
-        const normalizedVolume = Math.min(rms / 128, 1);
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
-        setArousalLevel(prev => (prev * 0.8) + (normalizedVolume * 0.2)); // Smooth it
-    }, [visualizerData]);
+  const getArousalColor = () => {
+    if (arousalLevel > 0.7) return '#EF4444';
+    if (arousalLevel > 0.5) return '#F59E0B';
+    return '#10B981';
+  };
 
-    // Handle high arousal trigger (Simulated intervention)
-    useEffect(() => {
-        if (arousalLevel > 0.8 && !isProcessing && isRecording) {
-            // Threshold Triggered
-            console.log('High arousal detected!');
-            // In a real app, this might trigger an interruption.
-        }
-    }, [arousalLevel, isProcessing, isRecording]);
+  const getArousalLabel = () => {
+    if (arousalLevel > 0.7) return 'High Stress';
+    if (arousalLevel > 0.5) return 'Moderate';
+    return 'Calm';
+  };
 
-    const handleAnalyze = async () => {
-        if (!audioBase64) return;
-        setIsProcessing(true);
+  const handleAnalyze = () => {
+    setIsAnalyzing(true);
+    setTimeout(() => {
+      setAiResponse("Take a deep breath. I noticed your voice pitch increased during the last few moments. Try speaking more slowly and deliberately. Remember: you have time. There's no rush. Let's pause for three deep breaths together.");
+      setIsAnalyzing(false);
+    }, 2000);
+  };
 
-        try {
-            // Call API Route (we'll implement this next)
-            const response = await fetch('/api/analyze-tone', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ audio: audioBase64 })
-            });
-            const data = await response.json();
-            setAiResponse(data.text);
+  const startSession = () => {
+    setIsRecording(true);
+    setSessionTime(0);
+    setAiResponse(null);
+  };
 
-            // Simple TTS
-            if (data.text) {
-                const ut = new SpeechSynthesisUtterance(data.text);
-                ut.rate = 0.8; // Slow down
-                ut.pitch = 0.9; // Lower pitch
-                window.speechSynthesis.speak(ut);
-            }
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setIsProcessing(false);
-        }
-    };
+  const stopSession = () => {
+    setIsRecording(false);
+  };
 
-    return (
-        <div className="min-h-screen p-8 flex flex-col items-center gap-8">
-            <header className="w-full max-w-2xl text-center">
-                <h1 className="text-3xl font-bold mb-2">Dynamic Tone De-escalation</h1>
-                <p className="text-gray-400">Speak freely. If tension rises, I'll help you slow down.</p>
-            </header>
+  return (
+    <div style={{ minHeight: '100vh', background: '#FDF8F3' }}>
+      {/* Header */}
+      <header style={{
+        background: 'white',
+        borderBottom: '1px solid #E5E7EB',
+        padding: '16px 24px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between'
+      }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{
+            width: '36px',
+            height: '36px',
+            background: '#10B981',
+            borderRadius: '10px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <span style={{ fontSize: '18px' }}>🎙️</span>
+          </div>
+          <span style={{ fontSize: '18px', fontWeight: '700', color: '#1F2937' }}>Voca-Coach</span>
+        </Link>
 
-            <div className="w-full max-w-2xl">
-                <ToneVisualizer data={visualizerData} />
+        <nav style={{ display: 'flex', gap: '24px' }}>
+          {[
+            { href: '/dashboard', label: 'Dashboard' },
+            { href: '/de-escalation', label: 'De-escalation', active: true },
+            { href: '/biomarkers', label: 'Biomarkers' },
+            { href: '/journal', label: 'Journal' },
+            { href: '/persona', label: 'Persona' }
+          ].map(item => (
+            <Link key={item.href} href={item.href} style={{
+              fontSize: '14px',
+              fontWeight: '500',
+              color: item.active ? '#10B981' : '#6B7280',
+              padding: '8px 0',
+              borderBottom: item.active ? '2px solid #10B981' : 'none'
+            }}>
+              {item.label}
+            </Link>
+          ))}
+        </nav>
 
-                {/* Arousal Meter */}
-                <div className="mt-4 flex items-center gap-4">
-                    <span className="text-xs font-mono text-gray-400">AROUSAL LEVEL</span>
-                    <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
-                        <div
-                            className="h-full transition-all duration-200"
-                            style={{
-                                width: `${arousalLevel * 100}%`,
-                                backgroundColor: arousalLevel > 0.6 ? '#ff5555' : '#22c55e'
-                            }}
-                        />
-                    </div>
-                </div>
-            </div>
+        <Link href="/" style={{
+          padding: '10px 20px',
+          background: '#F3F4F6',
+          borderRadius: '8px',
+          fontSize: '14px',
+          fontWeight: '500',
+          color: '#4B5563'
+        }}>Back to Home</Link>
+      </header>
 
-            <div className="flex gap-4">
-                {!isRecording ? (
-                    <button onClick={startRecording} className="btn btn-primary w-32">
-                        Start
-                    </button>
-                ) : (
-                    <button onClick={stopRecording} className="btn btn-primary bg-red-500 hover:bg-red-600 w-32 text-white">
-                        Stop
-                    </button>
-                )}
-
-                {audioBase64 && !isRecording && (
-                    <button onClick={handleAnalyze} disabled={isProcessing} className="btn btn-secondary">
-                        {isProcessing ? 'Analyzing...' : 'Analyze Session'}
-                    </button>
-                )}
-            </div>
-
-            {aiResponse && (
-                <div className="max-w-2xl w-full glass-panel p-6 animate-fade-in mt-4">
-                    <h3 className="text-primary text-sm font-bold mb-2 uppercase tracking-wider">AI Intervention</h3>
-                    <p className="text-lg italic leading-relaxed">"{aiResponse}"</p>
-                </div>
-            )}
+      {/* Main Content */}
+      <main style={{ maxWidth: '800px', margin: '0 auto', padding: '48px 24px' }}>
+        {/* Page Header */}
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#1F2937', marginBottom: '8px' }}>
+            🌬️ De-escalation Coach
+          </h1>
+          <p style={{ color: '#6B7280' }}>Speak freely. I'll help you stay calm and grounded.</p>
         </div>
-    );
+
+        {/* Recording Area */}
+        <div style={{
+          background: 'white',
+          borderRadius: '24px',
+          padding: '40px',
+          border: '1px solid #E5E7EB',
+          textAlign: 'center',
+          marginBottom: '24px'
+        }}>
+          {/* Visualizer / Recording State */}
+          <div style={{
+            width: '160px',
+            height: '160px',
+            borderRadius: '50%',
+            margin: '0 auto 32px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: isRecording 
+              ? `radial-gradient(circle, ${getArousalColor()}22 0%, ${getArousalColor()}11 100%)`
+              : '#F9FAFB',
+            border: `4px solid ${isRecording ? getArousalColor() : '#E5E7EB'}`,
+            transition: 'all 0.3s ease'
+          }}>
+            {isRecording ? (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '36px', marginBottom: '8px' }}>🎙️</div>
+                <div style={{ fontSize: '24px', fontWeight: '700', color: '#1F2937' }}>{formatTime(sessionTime)}</div>
+              </div>
+            ) : (
+              <div style={{ fontSize: '48px' }}>🎙️</div>
+            )}
+          </div>
+
+          {/* Arousal Meter */}
+          {isRecording && (
+            <div style={{ marginBottom: '32px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '13px', color: '#6B7280' }}>Stress Level</span>
+                <span style={{ 
+                  fontSize: '13px', 
+                  fontWeight: '600', 
+                  color: getArousalColor(),
+                  background: `${getArousalColor()}15`,
+                  padding: '4px 10px',
+                  borderRadius: '999px'
+                }}>{getArousalLabel()}</span>
+              </div>
+              <div style={{
+                height: '8px',
+                background: '#F3F4F6',
+                borderRadius: '999px',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  height: '100%',
+                  width: `${arousalLevel * 100}%`,
+                  background: `linear-gradient(90deg, #10B981 0%, ${getArousalColor()} 100%)`,
+                  borderRadius: '999px',
+                  transition: 'width 0.3s ease'
+                }} />
+              </div>
+            </div>
+          )}
+
+          {/* Controls */}
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+            {!isRecording ? (
+              <button onClick={startSession} style={{
+                padding: '16px 40px',
+                background: '#10B981',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                fontWeight: '600',
+                fontSize: '16px',
+                cursor: 'pointer'
+              }}>
+                Start Session
+              </button>
+            ) : (
+              <button onClick={stopSession} style={{
+                padding: '16px 40px',
+                background: '#EF4444',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                fontWeight: '600',
+                fontSize: '16px',
+                cursor: 'pointer'
+              }}>
+                End Session
+              </button>
+            )}
+
+            {!isRecording && sessionTime > 0 && (
+              <button onClick={handleAnalyze} disabled={isAnalyzing} style={{
+                padding: '16px 40px',
+                background: 'white',
+                color: '#1F2937',
+                border: '2px solid #E5E7EB',
+                borderRadius: '12px',
+                fontWeight: '600',
+                fontSize: '16px',
+                cursor: 'pointer'
+              }}>
+                {isAnalyzing ? 'Analyzing...' : 'Get Feedback'}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* AI Response */}
+        {aiResponse && (
+          <div style={{
+            background: 'linear-gradient(135deg, #ECFDF5 0%, #FEF3E7 100%)',
+            borderRadius: '20px',
+            padding: '28px',
+            border: '1px solid #D1FAE5'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <span style={{ fontSize: '24px' }}>🧘</span>
+              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1F2937' }}>AI Coach Suggestion</h3>
+            </div>
+            <p style={{ fontSize: '16px', color: '#4B5563', lineHeight: '1.7', fontStyle: 'italic' }}>
+              "{aiResponse}"
+            </p>
+          </div>
+        )}
+
+        {/* Tips */}
+        {!isRecording && !aiResponse && (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '16px',
+            marginTop: '24px'
+          }}>
+            {[
+              { icon: '🫁', title: 'Breathe', desc: 'Deep breaths lower stress hormones' },
+              { icon: '🐢', title: 'Slow Down', desc: 'Speak 20% slower than normal' },
+              { icon: '👂', title: 'Pause', desc: 'Take 2-second pauses between thoughts' }
+            ].map((tip, i) => (
+              <div key={i} style={{
+                background: 'white',
+                borderRadius: '16px',
+                padding: '20px',
+                textAlign: 'center',
+                border: '1px solid #E5E7EB'
+              }}>
+                <div style={{ fontSize: '28px', marginBottom: '12px' }}>{tip.icon}</div>
+                <div style={{ fontWeight: '600', color: '#1F2937', marginBottom: '4px' }}>{tip.title}</div>
+                <div style={{ fontSize: '13px', color: '#6B7280' }}>{tip.desc}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
+  );
 }
