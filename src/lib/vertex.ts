@@ -13,7 +13,7 @@ const genAI = new GoogleGenerativeAI(API_KEY);
  * Get a Gemini model instance.
  * @param modelName - e.g., 'gemini-1.5-flash'
  */
-export function getModel(modelName: string = 'gemini-1.5-flash'): GenerativeModel {
+export function getModel(modelName: string = 'gemini-2.0-flash-exp'): GenerativeModel {
     return genAI.getGenerativeModel({
         model: modelName,
         generationConfig: {
