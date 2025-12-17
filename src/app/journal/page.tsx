@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -10,12 +12,20 @@ interface Message {
 }
 
 export default function JournalPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: "Hello 👋 I'm here to listen and help you reflect. What's on your mind today?" }
   ]);
-  const [loading, setLoading] = useState(false);
+  const [chatLoading, setChatLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -25,14 +35,15 @@ export default function JournalPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || loading) return;
+    if (!input.trim() || chatLoading) return;
 
     const userMsg = input;
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
-    setLoading(true);
+    setChatLoading(true);
 
     try {
+      // Get AI analysis
       const res = await fetch('/api/journal-insight', {
         method: 'POST',
         body: JSON.stringify({ message: userMsg, context: messages.slice(-3) }),
@@ -40,11 +51,23 @@ export default function JournalPage() {
       });
       const data = await res.json();
 
+      // Add AI response
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: data.socraticPrompt,
+        content: data.socraticPrompt || "That's interesting. Can you tell me more?",
         distortion: data.distortion
       }]);
+
+      // Save to database
+      await fetch('/api/journal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: userMsg,
+          distortion: data.distortion || null,
+          socraticPrompt: data.socraticPrompt || null,
+        }),
+      });
     } catch {
       // Fallback response if API fails
       const fallbackResponses = [
@@ -58,9 +81,20 @@ export default function JournalPage() {
         content: fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)]
       }]);
     } finally {
-      setLoading(false);
+      setChatLoading(false);
     }
   };
+
+  if (loading || !user) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FDF8F3' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '32px', marginBottom: '16px' }}>🎙️</div>
+          <div style={{ color: '#6B7280' }}>Loading...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#FDF8F3', display: 'flex', flexDirection: 'column' }}>
@@ -97,7 +131,7 @@ export default function JournalPage() {
           fontSize: '14px',
           fontWeight: '500',
           color: '#4B5563'
-        }}>Exit</Link>
+        }}>Back to Dashboard</Link>
       </header>
 
       {/* Chat Area */}
@@ -156,7 +190,7 @@ export default function JournalPage() {
             </div>
           ))}
           
-          {loading && (
+          {chatLoading && (
             <div style={{ display: 'flex', alignItems: 'flex-start' }}>
               <div style={{
                 background: 'white',
@@ -211,15 +245,15 @@ export default function JournalPage() {
           />
           <button
             type="submit"
-            disabled={!input.trim() || loading}
+            disabled={!input.trim() || chatLoading}
             style={{
               width: '52px',
               height: '52px',
-              background: input.trim() && !loading ? '#10B981' : '#E5E7EB',
+              background: input.trim() && !chatLoading ? '#10B981' : '#E5E7EB',
               color: 'white',
               border: 'none',
               borderRadius: '50%',
-              cursor: input.trim() && !loading ? 'pointer' : 'not-allowed',
+              cursor: input.trim() && !chatLoading ? 'pointer' : 'not-allowed',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
