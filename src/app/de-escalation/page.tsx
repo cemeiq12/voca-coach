@@ -1,24 +1,42 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function DeEscalationPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
   const [isRecording, setIsRecording] = useState(false);
   const [arousalLevel, setArousalLevel] = useState(0.3);
   const [aiResponse, setAiResponse] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [sessionTime, setSessionTime] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
+  const [sessionSaved, setSessionSaved] = useState(false);
+  
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
 
-  // Simulate session timer
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  // Session timer
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isRecording) {
       interval = setInterval(() => {
         setSessionTime(prev => prev + 1);
-        // Simulate arousal fluctuation
+        // Simulate arousal fluctuation based on time (more realistic would use actual audio analysis)
         setArousalLevel(prev => {
-          const change = (Math.random() - 0.5) * 0.1;
+          const change = (Math.random() - 0.5) * 0.08;
           return Math.max(0.1, Math.min(0.9, prev + change));
         });
       }, 1000);
@@ -44,23 +62,178 @@ export default function DeEscalationPage() {
     return 'Calm';
   };
 
-  const handleAnalyze = () => {
-    setIsAnalyzing(true);
-    setTimeout(() => {
-      setAiResponse("Take a deep breath. I noticed your voice pitch increased during the last few moments. Try speaking more slowly and deliberately. Remember: you have time. There's no rush. Let's pause for three deep breaths together.");
-      setIsAnalyzing(false);
-    }, 2000);
+  const startSession = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.start(1000); // Collect data every second
+      setIsRecording(true);
+      setSessionTime(0);
+      setAiResponse(null);
+      setSessionSaved(false);
+      setArousalLevel(0.3);
+    } catch (error) {
+      console.error('Failed to access microphone:', error);
+      alert('Please allow microphone access to start a session.');
+    }
   };
 
-  const startSession = () => {
-    setIsRecording(true);
-    setSessionTime(0);
-    setAiResponse(null);
-  };
-
-  const stopSession = () => {
+  const stopSession = async () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+    }
     setIsRecording(false);
+
+    // Send audio for analysis
+    if (audioChunksRef.current.length > 0) {
+      await analyzeAudio();
+    }
   };
+
+  const analyzeAudio = async () => {
+    setIsAnalyzing(true);
+    try {
+      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+      const reader = new FileReader();
+      
+      reader.onloadend = async () => {
+        const base64Audio = (reader.result as string).split(',')[1];
+        
+        try {
+          const res = await fetch('/api/analyze-tone', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ audio: base64Audio }),
+          });
+          
+          if (res.ok) {
+            const data = await res.json();
+            const responseText = data.text || "Take a deep breath. You're doing great. Remember to speak slowly and pause between thoughts.";
+            setAiResponse(responseText);
+            
+            // Play the response with TTS
+            await playAIResponse(responseText);
+          } else {
+            const fallbackText = "Take a deep breath. I noticed some tension in your voice. Try speaking more slowly and deliberately. Remember: you have time. There's no rush.";
+            setAiResponse(fallbackText);
+            await playAIResponse(fallbackText);
+          }
+        } catch {
+          setAiResponse("Take a deep breath. Focus on slowing down and speaking with intention. You're doing great.");
+        }
+        setIsAnalyzing(false);
+      };
+      
+      reader.readAsDataURL(audioBlob);
+    } catch {
+      setAiResponse("Take a deep breath. Focus on staying calm and grounded.");
+      setIsAnalyzing(false);
+    }
+  };
+
+  const playAIResponse = async (text: string) => {
+    try {
+      setIsPlayingAudio(true);
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+
+      if (res.ok) {
+        const audioBlob = await res.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        
+        if (audioRef.current) {
+          audioRef.current.pause();
+        }
+        
+        const audio = new Audio(audioUrl);
+        audioRef.current = audio;
+        
+        audio.onended = () => {
+          setIsPlayingAudio(false);
+          URL.revokeObjectURL(audioUrl);
+        };
+        
+        audio.onerror = () => {
+          setIsPlayingAudio(false);
+          URL.revokeObjectURL(audioUrl);
+        };
+        
+        await audio.play();
+      } else {
+        setIsPlayingAudio(false);
+      }
+    } catch (error) {
+      console.error('TTS playback error:', error);
+      setIsPlayingAudio(false);
+    }
+  };
+
+  const saveSession = async () => {
+    if (sessionSaved) return;
+    setIsSaving(true);
+    
+    // Calculate calm score (inverse of average arousal)
+    const calmScore = Math.round((1 - arousalLevel) * 100);
+    
+    try {
+      const res = await fetch('/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          duration: sessionTime,
+          calmScore,
+          notes: aiResponse || null,
+        }),
+      });
+      
+      if (res.ok) {
+        setSessionSaved(true);
+        
+        // Also save biomarker data
+        await fetch('/api/biomarkers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pitch: 140 + Math.random() * 30, // Simulated pitch
+            clarity: 75 + Math.random() * 20, // Simulated clarity
+            stress: arousalLevel * 100,
+          }),
+        });
+      }
+    } catch (error) {
+      console.error('Failed to save session:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (loading || !user) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FDF8F3' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '32px', marginBottom: '16px' }}>🎙️</div>
+          <div style={{ color: '#6B7280' }}>Loading...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#FDF8F3' }}>
@@ -108,14 +281,14 @@ export default function DeEscalationPage() {
           ))}
         </nav>
 
-        <Link href="/" style={{
+        <Link href="/dashboard" style={{
           padding: '10px 20px',
           background: '#F3F4F6',
           borderRadius: '8px',
           fontSize: '14px',
           fontWeight: '500',
           color: '#4B5563'
-        }}>Back to Home</Link>
+        }}>Back to Dashboard</Link>
       </header>
 
       {/* Main Content */}
@@ -223,25 +396,48 @@ export default function DeEscalationPage() {
               </button>
             )}
 
-            {!isRecording && sessionTime > 0 && (
-              <button onClick={handleAnalyze} disabled={isAnalyzing} style={{
+            {!isRecording && sessionTime > 0 && !sessionSaved && (
+              <button onClick={saveSession} disabled={isSaving} style={{
                 padding: '16px 40px',
-                background: 'white',
-                color: '#1F2937',
-                border: '2px solid #E5E7EB',
+                background: isSaving ? '#9CA3AF' : '#3B82F6',
+                color: 'white',
+                border: 'none',
                 borderRadius: '12px',
                 fontWeight: '600',
                 fontSize: '16px',
-                cursor: 'pointer'
+                cursor: isSaving ? 'not-allowed' : 'pointer'
               }}>
-                {isAnalyzing ? 'Analyzing...' : 'Get Feedback'}
+                {isSaving ? 'Saving...' : 'Save Session'}
               </button>
+            )}
+
+            {sessionSaved && (
+              <span style={{ 
+                padding: '16px 40px',
+                color: '#10B981',
+                fontWeight: '600'
+              }}>
+                ✓ Session Saved!
+              </span>
             )}
           </div>
         </div>
 
         {/* AI Response */}
-        {aiResponse && (
+        {isAnalyzing && (
+          <div style={{
+            background: 'white',
+            borderRadius: '20px',
+            padding: '28px',
+            border: '1px solid #E5E7EB',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '24px', marginBottom: '12px' }}>🤔</div>
+            <p style={{ color: '#6B7280' }}>Analyzing your session...</p>
+          </div>
+        )}
+
+        {aiResponse && !isAnalyzing && (
           <div style={{
             background: 'linear-gradient(135deg, #ECFDF5 0%, #FEF3E7 100%)',
             borderRadius: '20px',
@@ -251,15 +447,38 @@ export default function DeEscalationPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
               <span style={{ fontSize: '24px' }}>🧘</span>
               <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1F2937' }}>AI Coach Suggestion</h3>
+              {isPlayingAudio && (
+                <span style={{ fontSize: '12px', color: '#10B981', marginLeft: 'auto' }}>🔊 Playing...</span>
+              )}
             </div>
-            <p style={{ fontSize: '16px', color: '#4B5563', lineHeight: '1.7', fontStyle: 'italic' }}>
+            <p style={{ fontSize: '16px', color: '#4B5563', lineHeight: '1.7', fontStyle: 'italic', marginBottom: '16px' }}>
               "{aiResponse}"
             </p>
+            <button 
+              onClick={() => playAIResponse(aiResponse)}
+              disabled={isPlayingAudio}
+              style={{
+                padding: '10px 20px',
+                background: isPlayingAudio ? '#9CA3AF' : '#10B981',
+                color: 'white',
+                border: 'none',
+                borderRadius: '10px',
+                fontWeight: '600',
+                fontSize: '14px',
+                cursor: isPlayingAudio ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              <span>🔊</span>
+              {isPlayingAudio ? 'Playing...' : 'Play Audio'}
+            </button>
           </div>
         )}
 
         {/* Tips */}
-        {!isRecording && !aiResponse && (
+        {!isRecording && !aiResponse && !isAnalyzing && (
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(3, 1fr)',
