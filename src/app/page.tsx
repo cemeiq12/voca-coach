@@ -1,85 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
+import Navbar from '@/components/Navbar';
 
 export default function Home() {
   return (
-    <div style={{ minHeight: '100vh', background: '#FDF8F3' }}>
+    <div style={{ minHeight: '100vh' }}>
       
-      {/* ========== NAVBAR ========== */}
-      <nav style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 50,
-        background: 'rgba(253, 248, 243, 0.95)',
-        backdropFilter: 'blur(8px)',
-        borderBottom: '1px solid rgba(0,0,0,0.05)'
-      }}>
-        <div style={{
-          maxWidth: '1200px',
-          margin: '0 auto',
-          padding: '0 24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          height: '72px'
-        }}>
-          {/* Logo */}
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              background: '#10B981',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <span style={{ fontSize: '20px' }}>🎙️</span>
-            </div>
-            <span style={{ fontSize: '20px', fontWeight: '700', color: '#1F2937' }}>Voca-Coach</span>
-          </Link>
-
-          {/* Nav Links - Desktop */}
-          <div className="hide-mobile" style={{ display: 'flex', gap: '32px' }}>
-            {['Features', 'How it Works', 'Testimonials'].map(item => (
-              <Link 
-                key={item} 
-                href={`#${item.toLowerCase().replace(' ', '-')}`}
-                style={{ fontSize: '15px', fontWeight: '500', color: '#4B5563' }}
-              >
-                {item}
-              </Link>
-            ))}
-          </div>
-
-          {/* Auth Buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <Link href="/login" className="hide-mobile" style={{ fontSize: '15px', fontWeight: '600', color: '#4B5563', padding: '10px 16px' }}>
-              Log in
-            </Link>
-            <Link href="/signup" style={{
-              padding: '12px 24px',
-              background: '#10B981',
-              color: 'white',
-              borderRadius: '999px',
-              fontSize: '15px',
-              fontWeight: '600'
-            }}>
-              Get Started
-            </Link>
-          </div>
-        </div>
-      </nav>
+      {/* Navbar */}
+      <Navbar isAuthenticated={false} />
 
       {/* ========== HERO SECTION ========== */}
       <section style={{
         paddingTop: '140px',
         paddingBottom: '80px',
-        background: 'linear-gradient(180deg, #FDF8F3 0%, #ECFDF5 100%)',
         position: 'relative',
         overflow: 'hidden'
       }}>
@@ -90,7 +24,7 @@ export default function Home() {
           right: '5%',
           width: '300px',
           height: '300px',
-          background: 'radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, transparent 70%)',
           borderRadius: '50%'
         }} />
         <div style={{
@@ -99,7 +33,7 @@ export default function Home() {
           left: '5%',
           width: '200px',
           height: '200px',
-          background: 'radial-gradient(circle, rgba(251, 191, 36, 0.1) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, transparent 70%)',
           borderRadius: '50%'
         }} />
 
@@ -110,12 +44,12 @@ export default function Home() {
             alignItems: 'center',
             gap: '8px',
             padding: '8px 16px',
-            background: '#ECFDF5',
+            background: 'rgba(124, 58, 237, 0.1)',
             borderRadius: '999px',
             marginBottom: '24px'
           }}>
-            <span style={{ width: '8px', height: '8px', background: '#10B981', borderRadius: '50%' }} />
-            <span style={{ fontSize: '14px', fontWeight: '600', color: '#059669' }}>AI-Powered Wellness Companion</span>
+            <span style={{ width: '8px', height: '8px', background: '#7C3AED', borderRadius: '50%' }} />
+            <span style={{ fontSize: '14px', fontWeight: '600', color: '#6D28D9' }}>AI-Powered Therapy Companion</span>
           </div>
 
           {/* Headline */}
@@ -129,8 +63,14 @@ export default function Home() {
             marginLeft: 'auto',
             marginRight: 'auto'
           }}>
-            Find your calm in
-            <span style={{ display: 'block', color: '#10B981' }}>every conversation</span>
+            Master communication with
+            <span style={{ 
+              display: 'block', 
+              background: 'linear-gradient(135deg, #7C3AED 0%, #EC4899 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
+            }}>AI-powered coaching</span>
           </h1>
 
           {/* Subtitle */}
@@ -141,19 +81,19 @@ export default function Home() {
             margin: '0 auto 40px',
             lineHeight: '1.7'
           }}>
-            Voca-Coach helps you manage stress, improve communication, and build confidence through AI-guided vocal coaching.
+            Voca-Coach helps therapists and professionals improve communication, track emotional insights, and enhance client engagement.
           </p>
 
           {/* CTA Buttons */}
           <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '60px' }}>
             <Link href="/signup" style={{
               padding: '16px 32px',
-              background: '#10B981',
+              background: 'linear-gradient(135deg, #7C3AED 0%, #EC4899 100%)',
               color: 'white',
               borderRadius: '999px',
               fontSize: '17px',
               fontWeight: '600',
-              boxShadow: '0 4px 24px rgba(16, 185, 129, 0.3)'
+              boxShadow: '0 4px 24px rgba(124, 58, 237, 0.3)'
             }}>
               Try Free for 7 Days
             </Link>
@@ -218,11 +158,11 @@ export default function Home() {
             <div style={{
               display: 'inline-block',
               padding: '8px 16px',
-              background: '#ECFDF5',
+              background: 'rgba(56, 184, 255, 0.1)',
               borderRadius: '999px',
               marginBottom: '16px'
             }}>
-              <span style={{ fontSize: '13px', fontWeight: '700', color: '#059669', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Features</span>
+              <span style={{ fontSize: '13px', fontWeight: '700', color: '#38B8FF', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Features</span>
             </div>
             <h2 style={{ fontSize: 'clamp(32px, 4vw, 44px)', fontWeight: '700', color: '#1F2937', marginBottom: '16px' }}>
               Everything you need to communicate better
@@ -234,12 +174,12 @@ export default function Home() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
             {[
-              { icon: '🎯', title: 'Real-time Feedback', desc: 'Get instant insights on your tone and stress levels as you speak.', bg: '#ECFDF5' },
-              { icon: '📈', title: 'Progress Tracking', desc: 'Monitor your improvement with intuitive charts and trends.', bg: '#FEF3E7' },
-              { icon: '🧘', title: 'CBT Techniques', desc: 'Challenge negative thoughts with proven therapy methods.', bg: '#F3F0FF' },
-              { icon: '🔒', title: 'Private & Secure', desc: 'Your voice and thoughts stay private with encryption.', bg: '#FEF2F2' },
-              { icon: '✨', title: 'AI-Powered', desc: 'Smart coaching that adapts to your unique speaking patterns.', bg: '#ECFDF5' },
-              { icon: '💬', title: 'Practice Mode', desc: 'Rehearse difficult conversations in a safe space.', bg: '#FEF3E7' }
+              { icon: '🎯', title: 'Real-time Feedback', desc: 'Get instant insights on your tone and stress levels as you speak.', bg: 'rgba(56, 184, 255, 0.1)' },
+              { icon: '📈', title: 'Progress Tracking', desc: 'Monitor your improvement with intuitive charts and trends.', bg: 'rgba(139, 94, 255, 0.1)' },
+              { icon: '🧘', title: 'CBT Techniques', desc: 'Challenge negative thoughts with proven therapy methods.', bg: 'rgba(122, 239, 255, 0.1)' },
+              { icon: '🔒', title: 'Private & Secure', desc: 'Your voice and thoughts stay private with encryption.', bg: 'rgba(56, 184, 255, 0.1)' },
+              { icon: '✨', title: 'AI-Powered', desc: 'Smart coaching that adapts to your unique speaking patterns.', bg: 'rgba(139, 94, 255, 0.1)' },
+              { icon: '💬', title: 'Practice Mode', desc: 'Rehearse difficult conversations in a safe space.', bg: 'rgba(122, 239, 255, 0.1)' }
             ].map((item, i) => (
               <div key={i} style={{
                 background: 'white',
@@ -270,7 +210,7 @@ export default function Home() {
       </section>
 
       {/* ========== HOW IT WORKS ========== */}
-      <section id="how-it-works" style={{ padding: '100px 0', background: '#ECFDF5' }}>
+      <section id="how-it-works" style={{ padding: '100px 0', background: 'rgba(56, 184, 255, 0.05)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
           <div style={{ textAlign: 'center', marginBottom: '64px' }}>
             <div style={{
@@ -280,7 +220,7 @@ export default function Home() {
               borderRadius: '999px',
               marginBottom: '16px'
             }}>
-              <span style={{ fontSize: '13px', fontWeight: '700', color: '#059669', textTransform: 'uppercase', letterSpacing: '0.5px' }}>How it Works</span>
+              <span style={{ fontSize: '13px', fontWeight: '700', color: '#38B8FF', textTransform: 'uppercase', letterSpacing: '0.5px' }}>How it Works</span>
             </div>
             <h2 style={{ fontSize: 'clamp(32px, 4vw, 44px)', fontWeight: '700', color: '#1F2937' }}>
               Three simple steps to calm
@@ -305,7 +245,7 @@ export default function Home() {
                   margin: '0 auto 24px',
                   boxShadow: '0 4px 16px rgba(0,0,0,0.06)'
                 }}>
-                  <span style={{ fontSize: '24px', fontWeight: '700', color: '#10B981' }}>{step.num}</span>
+                  <span style={{ fontSize: '24px', fontWeight: '700', color: '#8B5EFF' }}>{step.num}</span>
                 </div>
                 <h3 style={{ fontSize: '22px', fontWeight: '600', color: '#1F2937', marginBottom: '12px' }}>{step.title}</h3>
                 <p style={{ fontSize: '16px', color: '#6B7280', lineHeight: '1.6', maxWidth: '280px', margin: '0 auto' }}>{step.desc}</p>
@@ -322,11 +262,11 @@ export default function Home() {
             <div style={{
               display: 'inline-block',
               padding: '8px 16px',
-              background: '#ECFDF5',
+              background: 'rgba(56, 184, 255, 0.1)',
               borderRadius: '999px',
               marginBottom: '16px'
             }}>
-              <span style={{ fontSize: '13px', fontWeight: '700', color: '#059669', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Testimonials</span>
+              <span style={{ fontSize: '13px', fontWeight: '700', color: '#38B8FF', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Testimonials</span>
             </div>
             <h2 style={{ fontSize: 'clamp(32px, 4vw, 44px)', fontWeight: '700', color: '#1F2937' }}>
               Loved by thousands
@@ -357,7 +297,7 @@ export default function Home() {
                     width: '44px',
                     height: '44px',
                     borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #10B981, #14B8A6)',
+                    background: 'linear-gradient(135deg, #38B8FF, #8B5EFF)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -380,7 +320,7 @@ export default function Home() {
       {/* ========== CTA SECTION ========== */}
       <section style={{
         padding: '100px 24px',
-        background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+        background: 'linear-gradient(135deg, #38B8FF 0%, #8B5EFF 100%)',
         textAlign: 'center'
       }}>
         <h2 style={{ fontSize: 'clamp(32px, 5vw, 48px)', fontWeight: '700', color: 'white', marginBottom: '16px' }}>
@@ -393,7 +333,7 @@ export default function Home() {
           display: 'inline-block',
           padding: '18px 40px',
           background: 'white',
-          color: '#059669',
+          color: '#8B5EFF',
           borderRadius: '999px',
           fontSize: '18px',
           fontWeight: '600',
@@ -410,7 +350,7 @@ export default function Home() {
             {/* Brand */}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                <div style={{ width: '36px', height: '36px', background: '#10B981', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, #38B8FF, #8B5EFF)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span style={{ fontSize: '18px' }}>🎙️</span>
                 </div>
                 <span style={{ fontSize: '18px', fontWeight: '700', color: 'white' }}>Voca-Coach</span>

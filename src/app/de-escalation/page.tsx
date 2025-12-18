@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import Navbar from '@/components/Navbar';
 
 export default function DeEscalationPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const router = useRouter();
   const [isRecording, setIsRecording] = useState(false);
   const [arousalLevel, setArousalLevel] = useState(0.3);
@@ -15,6 +15,7 @@ export default function DeEscalationPage() {
   const [sessionTime, setSessionTime] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [sessionSaved, setSessionSaved] = useState(false);
+  const [profilePic, setProfilePic] = useState<string>();
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -224,11 +225,16 @@ export default function DeEscalationPage() {
     }
   };
 
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
+  };
+
   if (loading || !user) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FDF8F3' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '32px', marginBottom: '16px' }}>🎙️</div>
+          <div style={{ width: '48px', height: '48px', border: '4px solid #E5E7EB', borderTop: '4px solid #7C3AED', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
           <div style={{ color: '#6B7280' }}>Loading...</div>
         </div>
       </div>
@@ -236,77 +242,35 @@ export default function DeEscalationPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#FDF8F3' }}>
-      {/* Header */}
-      <header style={{
-        background: 'white',
-        borderBottom: '1px solid #E5E7EB',
-        padding: '16px 24px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            width: '36px',
-            height: '36px',
-            background: '#10B981',
-            borderRadius: '10px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <span style={{ fontSize: '18px' }}>🎙️</span>
-          </div>
-          <span style={{ fontSize: '18px', fontWeight: '700', color: '#1F2937' }}>Voca-Coach</span>
-        </Link>
-
-        <nav style={{ display: 'flex', gap: '24px' }}>
-          {[
-            { href: '/dashboard', label: 'Dashboard' },
-            { href: '/de-escalation', label: 'De-escalation', active: true },
-            { href: '/biomarkers', label: 'Biomarkers' },
-            { href: '/journal', label: 'Journal' },
-            { href: '/persona', label: 'Persona' }
-          ].map(item => (
-            <Link key={item.href} href={item.href} style={{
-              fontSize: '14px',
-              fontWeight: '500',
-              color: item.active ? '#10B981' : '#6B7280',
-              padding: '8px 0',
-              borderBottom: item.active ? '2px solid #10B981' : 'none'
-            }}>
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        <Link href="/dashboard" style={{
-          padding: '10px 20px',
-          background: '#F3F4F6',
-          borderRadius: '8px',
-          fontSize: '14px',
-          fontWeight: '500',
-          color: '#4B5563'
-        }}>Back to Dashboard</Link>
-      </header>
+    <div style={{ minHeight: '100vh' }}>
+      <Navbar
+        isAuthenticated={true}
+        userName={user.name || 'User'}
+        userEmail={user.email}
+        profilePic={profilePic}
+        onProfilePicChange={setProfilePic}
+        onLogout={handleLogout}
+        currentPage="/de-escalation"
+      />
 
       {/* Main Content */}
       <main style={{ maxWidth: '800px', margin: '0 auto', padding: '48px 24px' }}>
         {/* Page Header */}
         <div style={{ textAlign: 'center', marginBottom: '40px' }}>
           <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#1F2937', marginBottom: '8px' }}>
-            🌬️ De-escalation Coach
+            Live Session
           </h1>
-          <p style={{ color: '#6B7280' }}>Record your voice to receive real-time emotional feedback and grounded advice.</p>
+          <p style={{ color: '#6B7280' }}>Record your voice to receive real-time emotional feedback and guidance.</p>
         </div>
 
         {/* Recording Area */}
         <div style={{
-          background: 'white',
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(10px)',
           borderRadius: '24px',
           padding: '40px',
-          border: '1px solid #E5E7EB',
+          border: '1px solid rgba(255, 255, 255, 0.5)',
+          boxShadow: '0 8px 32px rgba(124, 58, 237, 0.08)',
           textAlign: 'center',
           marginBottom: '24px'
         }}>
@@ -371,7 +335,7 @@ export default function DeEscalationPage() {
             {!isRecording ? (
               <button onClick={startSession} style={{
                 padding: '16px 40px',
-                background: '#10B981',
+                background: 'linear-gradient(135deg, #7C3AED 0%, #EC4899 100%)',
                 color: 'white',
                 border: 'none',
                 borderRadius: '12px',
@@ -399,7 +363,7 @@ export default function DeEscalationPage() {
             {!isRecording && sessionTime > 0 && !sessionSaved && (
               <button onClick={saveSession} disabled={isSaving} style={{
                 padding: '16px 40px',
-                background: isSaving ? '#9CA3AF' : '#3B82F6',
+                background: isSaving ? '#9CA3AF' : '#06B6D4',
                 color: 'white',
                 border: 'none',
                 borderRadius: '12px',
@@ -414,7 +378,7 @@ export default function DeEscalationPage() {
             {sessionSaved && (
               <span style={{ 
                 padding: '16px 40px',
-                color: '#10B981',
+                color: '#7C3AED',
                 fontWeight: '600'
               }}>
                 ✓ Session Saved!

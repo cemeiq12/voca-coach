@@ -1,36 +1,148 @@
+'use client';
+
+import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import ProfileDropdown from './ProfileDropdown';
 
-export default function Navbar() {
-    return (
-        <nav className="flex justify-between items-center py-4 px-6 md:px-12 max-w-7xl mx-auto sticky top-0 z-50 bg-[#10B981]/90 backdrop-blur-md border-b border-emerald-600">
-            {/* Logo - White for Dark BG */}
-            <Link href="/" className="flex items-center gap-3 group">
-                <div className="bg-white p-1.5 rounded-full flex items-center justify-center shrink-0">
-                    <Image src="/assets/logo-leaf-mic.svg" alt="Leaf Mic Logo" width={24} height={24} className="h-6 w-6" />
-                </div>
-                <span className="text-white text-xl font-bold tracking-tight group-hover:opacity-90 transition-opacity leading-none pt-0.5">Voca-Coach</span>
-            </Link>
-
-            {/* Center Links (Desktop) - White text */}
-            <div className="hidden md:flex gap-8 text-sm font-semibold text-emerald-50">
-                <Link href="/" className="hover:text-white transition-colors">Home</Link>
-
-                {/* Module Links */}
-                <Link href="/de-escalation" className="hover:text-white transition-colors">De-escalation</Link>
-                <Link href="/biomarkers" className="hover:text-white transition-colors">Biomarkers</Link>
-                <Link href="/journal" className="hover:text-white transition-colors">Journal</Link>
-            </div>
-
-            {/* Right Actions */}
-            <div className="flex items-center gap-6">
-                <Link href="/dashboard" className="text-sm font-bold text-white hover:text-emerald-100 transition-colors hidden sm:block">
-                    Login
-                </Link>
-                <Link href="/dashboard" className="px-6 py-2.5 rounded-full bg-white text-primary text-sm font-bold hover:bg-emerald-50 shadow-lg transition-all hover:-translate-y-0.5">
-                    Get Started
-                </Link>
-            </div>
-        </nav>
-    );
+interface NavbarProps {
+  isAuthenticated?: boolean;
+  userName?: string;
+  userEmail?: string;
+  profilePic?: string;
+  onProfilePicChange?: (imageUrl: string) => void;
+  onLogout?: () => void;
+  currentPage?: string;
 }
+
+const Navbar: React.FC<NavbarProps> = ({
+  isAuthenticated = false,
+  userName = 'User',
+  userEmail,
+  profilePic,
+  onProfilePicChange,
+  onLogout,
+  currentPage = ''
+}) => {
+  const navItems = [
+    { href: '/dashboard', label: 'Dashboard' },
+    { href: '/de-escalation', label: 'Live Session' },
+    { href: '/biomarkers', label: 'Analytics' },
+    { href: '/journal', label: 'Journal' },
+    { href: '/persona', label: 'Practice' }
+  ];
+
+  return (
+    <nav style={{
+      position: 'sticky',
+      top: 0,
+      zIndex: 100,
+      background: 'rgba(255, 255, 255, 0.8)',
+      backdropFilter: 'blur(10px)',
+      borderBottom: '1px solid rgba(124, 58, 237, 0.1)'
+    }}>
+      <div style={{
+        maxWidth: '1400px',
+        margin: '0 auto',
+        padding: '0 24px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        height: '72px'
+      }}>
+        {/* Logo */}
+        <Link href={isAuthenticated ? "/dashboard" : "/"} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <Image
+            src="/voca-coach-logo.png"
+            alt="Voca-Coach Logo"
+            width={40}
+            height={40}
+            style={{ borderRadius: '10px' }}
+            onError={(e) => {
+              // Fallback to gradient if image fails
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              if (target.nextSibling) {
+                (target.nextSibling as HTMLElement).style.display = 'flex';
+              }
+            }}
+          />
+          <div style={{
+            width: '40px',
+            height: '40px',
+            background: 'linear-gradient(135deg, #7C3AED 0%, #EC4899 100%)',
+            borderRadius: '10px',
+            display: 'none',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: '700',
+            color: 'white',
+            fontSize: '14px'
+          }}>
+            VC
+          </div>
+          <span style={{ fontSize: '20px', fontWeight: '700', color: '#1F2937' }}>Voca-Coach</span>
+        </Link>
+
+        {/* Navigation Links (only show if authenticated) */}
+        {isAuthenticated && (
+          <div className="hide-mobile" style={{ display: 'flex', gap: '24px' }}>
+            {navItems.map(item => (
+              <Link
+                key={item.href}
+                href={item.href}
+                style={{
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: currentPage === item.href ? '#7C3AED' : '#6B7280',
+                  padding: '8px 0',
+                  borderBottom: currentPage === item.href ? '2px solid #7C3AED' : 'none',
+                  transition: 'color 0.2s ease'
+                }}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {/* Right Side - Auth Buttons or Profile */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {!isAuthenticated ? (
+            <>
+              <Link href="/login" className="hide-mobile" style={{
+                fontSize: '15px',
+                fontWeight: '600',
+                color: '#4B5563',
+                padding: '10px 16px'
+              }}>
+                Log in
+              </Link>
+              <Link href="/signup" style={{
+                padding: '12px 24px',
+                background: 'linear-gradient(135deg, #7C3AED 0%, #EC4899 100%)',
+                color: 'white',
+                borderRadius: '999px',
+                fontSize: '15px',
+                fontWeight: '600',
+                display: 'inline-block'
+              }}>
+                Get Started
+              </Link>
+            </>
+          ) : (
+            <ProfileDropdown
+              userName={userName}
+              userEmail={userEmail}
+              profilePic={profilePic}
+              onProfilePicChange={onProfilePicChange}
+              onLogout={onLogout}
+            />
+          )}
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+export default Navbar;

@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import Navbar from '@/components/Navbar';
 
 interface Persona {
   id: string;
@@ -27,7 +27,7 @@ const DEFAULT_PERSONAS: Persona[] = [
 ];
 
 export default function PersonaPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const router = useRouter();
   const [personas, setPersonas] = useState<Persona[]>(DEFAULT_PERSONAS);
   const [activePersona, setActivePersona] = useState<string>('p1');
@@ -39,6 +39,7 @@ export default function PersonaPage() {
   const [chatInput, setChatInput] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [profilePic, setProfilePic] = useState<string>();
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -132,7 +133,6 @@ export default function PersonaPage() {
         const assistantMessage = data.response;
         setChatMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
         
-        // Play TTS
         await playTTS(assistantMessage);
       }
     } catch (error) {
@@ -179,13 +179,18 @@ export default function PersonaPage() {
     }
   };
 
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
+  };
+
   const selectedPersona = personas.find(p => p.id === activePersona);
 
   if (loading || !user) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FDF8F3' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '32px', marginBottom: '16px' }}>🎙️</div>
+          <div style={{ width: '48px', height: '48px', border: '4px solid #E5E7EB', borderTop: '4px solid #7C3AED', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
           <div style={{ color: '#6B7280' }}>Loading...</div>
         </div>
       </div>
@@ -193,62 +198,18 @@ export default function PersonaPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#FDF8F3' }}>
+    <div style={{ minHeight: '100vh' }}>
       <audio ref={audioRef} onEnded={() => setIsPlaying(false)} />
       
-      {/* Header */}
-      <header style={{
-        background: 'white',
-        borderBottom: '1px solid #E5E7EB',
-        padding: '16px 24px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            width: '36px',
-            height: '36px',
-            background: '#10B981',
-            borderRadius: '10px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <span style={{ fontSize: '18px' }}>🎙️</span>
-          </div>
-          <span style={{ fontSize: '18px', fontWeight: '700', color: '#1F2937' }}>Voca-Coach</span>
-        </Link>
-
-        <nav style={{ display: 'flex', gap: '24px' }}>
-          {[
-            { href: '/dashboard', label: 'Dashboard' },
-            { href: '/de-escalation', label: 'De-escalation' },
-            { href: '/biomarkers', label: 'Biomarkers' },
-            { href: '/journal', label: 'Journal' },
-            { href: '/persona', label: 'Persona', active: true }
-          ].map(item => (
-            <Link key={item.href} href={item.href} style={{
-              fontSize: '14px',
-              fontWeight: '500',
-              color: item.active ? '#10B981' : '#6B7280',
-              padding: '8px 0',
-              borderBottom: item.active ? '2px solid #10B981' : 'none'
-            }}>
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        <Link href="/dashboard" style={{
-          padding: '10px 20px',
-          background: '#F3F4F6',
-          borderRadius: '8px',
-          fontSize: '14px',
-          fontWeight: '500',
-          color: '#4B5563'
-        }}>Back to Dashboard</Link>
-      </header>
+      <Navbar
+        isAuthenticated={true}
+        userName={user.name || 'User'}
+        userEmail={user.email}
+        profilePic={profilePic}
+        onProfilePicChange={setProfilePic}
+        onLogout={handleLogout}
+        currentPage="/persona"
+      />
 
       {/* Main Content */}
       <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 24px' }}>
@@ -271,7 +232,7 @@ export default function PersonaPage() {
                   onClick={() => !isChatting && setActivePersona(p.id)}
                   style={{
                     background: activePersona === p.id ? '#ECFDF5' : 'white',
-                    border: activePersona === p.id ? '2px solid #10B981' : '1px solid #E5E7EB',
+                    border: activePersona === p.id ? '2px solid #7C3AED' : '1px solid #E5E7EB',
                     borderRadius: '16px',
                     padding: isChatting ? '12px' : '20px',
                     cursor: isChatting ? 'default' : 'pointer',
@@ -285,7 +246,7 @@ export default function PersonaPage() {
                   <div style={{
                     width: isChatting ? '36px' : '48px',
                     height: isChatting ? '36px' : '48px',
-                    background: activePersona === p.id ? '#10B981' : '#F3F4F6',
+                    background: activePersona === p.id ? 'linear-gradient(135deg, #7C3AED 0%, #EC4899 100%)' : '#F3F4F6',
                     borderRadius: '12px',
                     display: 'flex',
                     alignItems: 'center',
@@ -344,7 +305,7 @@ export default function PersonaPage() {
                     <span style={{ fontSize: '24px' }}>{selectedPersona?.icon}</span>
                     <div>
                       <div style={{ fontWeight: '600', color: '#1F2937' }}>{selectedPersona?.name}</div>
-                      {isPlaying && <span style={{ fontSize: '12px', color: '#10B981' }}>🔊 Speaking...</span>}
+                      {isPlaying && <span style={{ fontSize: '12px', color: '#7C3AED' }}>🔊 Speaking...</span>}
                     </div>
                   </div>
                   <button onClick={endConversation} style={{
@@ -371,7 +332,7 @@ export default function PersonaPage() {
                         maxWidth: '80%',
                         padding: '12px 16px',
                         borderRadius: '16px',
-                        background: msg.role === 'user' ? '#10B981' : '#F3F4F6',
+                        background: msg.role === 'user' ? 'linear-gradient(135deg, #7C3AED 0%, #EC4899 100%)' : '#F3F4F6',
                         color: msg.role === 'user' ? 'white' : '#1F2937',
                         fontSize: '14px',
                         lineHeight: '1.5'
@@ -386,7 +347,7 @@ export default function PersonaPage() {
                         <span key={i} style={{
                           width: '8px',
                           height: '8px',
-                          background: '#10B981',
+                          background: '#7C3AED',
                           borderRadius: '50%',
                           animation: `bounce 1s ease-in-out ${i * 0.15}s infinite`
                         }} />
@@ -411,7 +372,7 @@ export default function PersonaPage() {
                   />
                   <button type="submit" disabled={!chatInput.trim() || isSending} style={{
                     padding: '14px 24px',
-                    background: chatInput.trim() && !isSending ? '#10B981' : '#E5E7EB',
+                    background: chatInput.trim() && !isSending ? 'linear-gradient(135deg, #7C3AED 0%, #EC4899 100%)' : '#E5E7EB',
                     color: 'white',
                     border: 'none',
                     borderRadius: '12px',
@@ -473,7 +434,7 @@ export default function PersonaPage() {
                     </button>
                     <button onClick={createPersona} disabled={!newPersonaName.trim() || !newPersonaDesc.trim()} style={{
                       padding: '14px 28px',
-                      background: newPersonaName.trim() && newPersonaDesc.trim() ? '#10B981' : '#E5E7EB',
+                      background: newPersonaName.trim() && newPersonaDesc.trim() ? 'linear-gradient(135deg, #7C3AED 0%, #EC4899 100%)' : '#E5E7EB',
                       color: 'white',
                       border: 'none',
                       borderRadius: '12px',
@@ -509,7 +470,7 @@ export default function PersonaPage() {
                 </p>
                 <button onClick={startConversation} style={{
                   padding: '14px 32px',
-                  background: '#10B981',
+                  background: 'linear-gradient(135deg, #7C3AED 0%, #EC4899 100%)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '12px',

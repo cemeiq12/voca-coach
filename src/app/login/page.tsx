@@ -49,8 +49,7 @@ export default function LoginPage() {
   return (
     <div style={{ 
       minHeight: '100vh', 
-      display: 'flex',
-      background: 'linear-gradient(135deg, #FDF8F3 0%, #ECFDF5 100%)'
+      display: 'flex'
     }}>
       <div style={{
         flex: 1,
@@ -62,18 +61,14 @@ export default function LoginPage() {
       }}>
         <div style={{ width: '100%', maxWidth: '400px' }}>
           {/* Logo */}
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '48px' }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              background: '#10B981',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <span style={{ fontSize: '20px' }}>🎙️</span>
-            </div>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '48px' }}>
+            <img src="/voca-coach-logo.png" alt="Logo" style={{ width: '40px', height: '40px', borderRadius: '10px' }} onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              const fallback = document.createElement('div');
+              fallback.style.cssText = 'width: 40px; height: 40px; background: linear-gradient(135deg, #7C3AED 0%, #EC4899 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px';
+              fallback.textContent = 'VC';
+              e.currentTarget.parentNode?.insertBefore(fallback, e.currentTarget);
+            }} />
             <span style={{ fontSize: '20px', fontWeight: '700', color: '#1F2937' }}>Voca-Coach</span>
           </Link>
 
@@ -159,7 +154,7 @@ export default function LoginPage() {
               style={{
                 width: '100%',
                 padding: '14px 20px',
-                background: isLoading ? '#9CA3AF' : '#10B981',
+                background: isLoading ? '#9CA3AF' : 'linear-gradient(135deg, #7C3AED 0%, #EC4899 100%)',
                 color: 'white',
                 border: 'none',
                 borderRadius: '12px',
@@ -179,7 +174,7 @@ export default function LoginPage() {
           {/* Sign up link */}
           <p style={{ textAlign: 'center', marginTop: '32px', fontSize: '15px', color: '#6B7280' }}>
             Don't have an account?{' '}
-            <Link href="/signup" style={{ color: '#10B981', fontWeight: '600' }}>Sign up</Link>
+            <Link href="/signup" style={{ color: '#7C3AED', fontWeight: '600' }}>Sign up</Link>
           </p>
         </div>
       </div>

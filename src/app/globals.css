@@ -8,20 +8,31 @@
 }
 
 :root {
-  /* Headspace-inspired Calm Color Palette */
-  --primary: #10B981;
-  --primary-light: #34D399;
-  --primary-dark: #059669;
-  --primary-hover: #047857;
-  --accent: #F59E0B;
+  /* Soft Pastel Therapy Theme */
+  --primary: #7C3AED;
+  --primary-light: #A78BFA;
+  --primary-dark: #6D28D9;
+  --primary-hover: #5B21B6;
+  --secondary: #EC4899;
+  --tertiary: #06B6D4;
+  --accent: #10B981;
+  --accent-yellow: #F59E0B;
 
-  /* Soft, calming backgrounds */
-  --bg-cream: #FDF8F3;
-  --bg-mint: #ECFDF5;
-  --bg-peach: #FEF3E7;
-  --bg-lavender: #F3F0FF;
+  /* Gradient backgrounds */
+  --bg-gradient-main: linear-gradient(135deg, #E0F2FE 0%, #F3E8FF 50%, #FCE7F3 100%);
+  --bg-gradient-purple: linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%);
+  --bg-gradient-pink: linear-gradient(135deg, #EC4899 0%, #F472B6 100%);
+  --bg-gradient-cyan: linear-gradient(135deg, #06B6D4 0%, #22D3EE 100%);
+  --bg-gradient-green: linear-gradient(135deg, #10B981 0%, #34D399 100%);
+  
+  /* Soft, pastel backgrounds */
+  --bg-cream: #FEFEFE;
+  --bg-purple-light: #F5F3FF;
+  --bg-pink-light: #FDF2F8;
+  --bg-cyan-light: #ECFEFF;
+  --bg-blue-light: #EFF6FF;
+  --bg-green-light: #ECFDF5;
   --bg-white: #FFFFFF;
-  --secondary: #dcfce7;
 
   /* Text colors */
   --text-dark: #1F2937;
@@ -30,9 +41,10 @@
   --foreground: #1F2937;
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.08);
+  --shadow-sm: 0 2px 4px rgba(124, 58, 237, 0.08);
+  --shadow-md: 0 4px 16px rgba(124, 58, 237, 0.12);
+  --shadow-lg: 0 12px 32px rgba(124, 58, 237, 0.16);
+  --shadow-glow: 0 0 24px rgba(124, 58, 237, 0.3);
 
   --radius: 16px;
   --radius-lg: 24px;
@@ -41,7 +53,8 @@
 
 body {
   font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  background-color: var(--bg-cream);
+  background: linear-gradient(135deg, #E0F2FE 0%, #F3E8FF 50%, #FCE7F3 100%);
+  background-attachment: fixed;
   color: var(--text-dark);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -122,11 +135,36 @@ body {
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  background: var(--bg-mint);
+  background: var(--bg-purple-light);
   color: var(--primary-dark);
   font-size: 13px;
   font-weight: 600;
   border-radius: var(--radius-full);
+}
+
+/* Tag Badges (for interests, styles, etc.) */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  background: rgba(124, 58, 237, 0.1);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(124, 58, 237, 0.2);
+}
+
+.tag-pink {
+  background: rgba(236, 72, 153, 0.1);
+  color: var(--secondary);
+  border-color: rgba(236, 72, 153, 0.2);
+}
+
+.tag-cyan {
+  background: rgba(6, 182, 212, 0.1);
+  color: var(--tertiary);
+  border-color: rgba(6, 182, 212, 0.2);
 }
 
 /* Section Headers */
@@ -228,10 +266,67 @@ a {
 
 /* Gradient text */
 .gradient-text {
-  background: linear-gradient(135deg, var(--primary) 0%, #14B8A6 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* Circular Progress */
+.circular-progress {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+.circular-progress svg {
+  transform: rotate(-90deg);
+}
+
+.circular-progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+/* Emotion Scale */
+.emotion-scale {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: white;
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+
+.emotion-emoji {
+  font-size: 28px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-purple-light);
+  border-radius: 50%;
+}
+
+.emotion-bar {
+  flex: 1;
+  height: 8px;
+  background: #E5E7EB;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.emotion-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
 }
 
 /* Icon container */
@@ -245,16 +340,39 @@ a {
   font-size: 24px;
 }
 
-.icon-box-emerald {
-  background: var(--bg-mint);
+.icon-box-purple {
+  background: var(--bg-purple-light);
 }
 
-.icon-box-peach {
-  background: var(--bg-peach);
+.icon-box-pink {
+  background: var(--bg-pink-light);
 }
 
-.icon-box-lavender {
-  background: var(--bg-lavender);
+.icon-box-cyan {
+  background: var(--bg-cyan-light);
+}
+
+/* Chat Bubble Styles */
+.chat-bubble {
+  max-width: 80%;
+  padding: 12px 16px;
+  border-radius: 16px;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.chat-bubble-user {
+  background: var(--bg-gradient-purple);
+  color: white;
+  margin-left: auto;
+  border-bottom-right-radius: 4px;
+}
+
+.chat-bubble-ai {
+  background: white;
+  color: var(--text-dark);
+  border: 1px solid #E5E7EB;
+  border-bottom-left-radius: 4px;
 }
 
 /* Responsive helpers */
@@ -266,8 +384,9 @@ a {
 
 /* Tailwind theme extensions */
 @theme {
-  --color-primary: #10B981;
-  --color-primary-hover: #047857;
-  --color-secondary: #dcfce7;
+  --color-primary: #7C3AED;
+  --color-primary-hover: #5B21B6;
+  --color-secondary: #EC4899;
+  --color-tertiary: #06B6D4;
   --color-foreground: #1F2937;
 }

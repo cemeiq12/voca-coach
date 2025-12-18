@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import Navbar from '@/components/Navbar';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -12,13 +12,14 @@ interface Message {
 }
 
 export default function JournalPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const router = useRouter();
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: "Hello 👋 I'm here to listen and help you reflect. What's on your mind today?" }
+    { role: 'assistant', content: "Hello! I'm here to listen and help you reflect. What's on your mind today?" }
   ]);
   const [chatLoading, setChatLoading] = useState(false);
+  const [profilePic, setProfilePic] = useState<string>();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -43,7 +44,6 @@ export default function JournalPage() {
     setChatLoading(true);
 
     try {
-      // Get AI analysis
       const res = await fetch('/api/journal-insight', {
         method: 'POST',
         body: JSON.stringify({ message: userMsg, context: messages.slice(-3) }),
@@ -51,14 +51,12 @@ export default function JournalPage() {
       });
       const data = await res.json();
 
-      // Add AI response
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: data.socraticPrompt || "That's interesting. Can you tell me more?",
         distortion: data.distortion
       }]);
 
-      // Save to database
       await fetch('/api/journal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -69,7 +67,6 @@ export default function JournalPage() {
         }),
       });
     } catch {
-      // Fallback response if API fails
       const fallbackResponses = [
         "That's interesting. Can you tell me more about what led you to feel this way?",
         "I hear you. What do you think might be underlying these feelings?",
@@ -85,11 +82,16 @@ export default function JournalPage() {
     }
   };
 
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
+  };
+
   if (loading || !user) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FDF8F3' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '32px', marginBottom: '16px' }}>🎙️</div>
+          <div style={{ width: '48px', height: '48px', border: '4px solid #E5E7EB', borderTop: '4px solid #7C3AED', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
           <div style={{ color: '#6B7280' }}>Loading...</div>
         </div>
       </div>
@@ -97,42 +99,16 @@ export default function JournalPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#FDF8F3', display: 'flex', flexDirection: 'column' }}>
-      {/* Header */}
-      <header style={{
-        background: 'white',
-        borderBottom: '1px solid #E5E7EB',
-        padding: '16px 24px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            width: '36px',
-            height: '36px',
-            background: '#10B981',
-            borderRadius: '10px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <span style={{ fontSize: '18px' }}>🎙️</span>
-          </div>
-          <span style={{ fontSize: '18px', fontWeight: '700', color: '#1F2937' }}>Voca-Coach</span>
-        </Link>
-
-        <h1 style={{ fontSize: '18px', fontWeight: '600', color: '#1F2937' }}>📓 Socratic Journal</h1>
-
-        <Link href="/dashboard" style={{
-          padding: '10px 20px',
-          background: '#F3F4F6',
-          borderRadius: '8px',
-          fontSize: '14px',
-          fontWeight: '500',
-          color: '#4B5563'
-        }}>Back to Dashboard</Link>
-      </header>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Navbar
+        isAuthenticated={true}
+        userName={user.name || 'User'}
+        userEmail={user.email}
+        profilePic={profilePic}
+        onProfilePicChange={setProfilePic}
+        onLogout={handleLogout}
+        currentPage="/journal"
+      />
 
       {/* Chat Area */}
       <div 
@@ -175,14 +151,16 @@ export default function JournalPage() {
                 fontSize: '15px',
                 lineHeight: '1.6',
                 ...(m.role === 'user' ? {
-                  background: '#10B981',
+                  background: 'linear-gradient(135deg, #7C3AED 0%, #EC4899 100%)',
                   color: 'white',
                   borderBottomRightRadius: '4px'
                 } : {
-                  background: 'white',
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  backdropFilter: 'blur(10px)',
                   color: '#1F2937',
                   borderBottomLeftRadius: '4px',
-                  border: '1px solid #E5E7EB'
+                  border: '1px solid rgba(255, 255, 255, 0.5)',
+                  boxShadow: '0 2px 8px rgba(124, 58, 237, 0.08)'
                 })
               }}>
                 {m.content}
