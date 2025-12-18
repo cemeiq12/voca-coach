@@ -206,7 +206,41 @@ export default function BiomarkerDashboard() {
                   Analyzing your vocal patterns...
                 </div>
               ) : insight ? (
-                <p style={{ fontSize: '16px', color: '#4B5563', lineHeight: '1.7' }}>{insight}</p>
+                <div style={{ fontSize: '15px', color: '#4B5563', lineHeight: '1.8', whiteSpace: 'pre-wrap' }}>
+                  {insight.split('\n').map((line, i) => {
+                    // Convert markdown bold (**text**) to styled text
+                    const boldRegex = /\*\*(.+?)\*\*/g;
+                    if (line.match(boldRegex)) {
+                      const parts = line.split(boldRegex);
+                      return (
+                        <div key={i} style={{ marginBottom: '8px' }}>
+                          {parts.map((part, j) => 
+                            j % 2 === 1 ? (
+                              <strong key={j} style={{ fontWeight: '700', color: '#1F2937' }}>{part}</strong>
+                            ) : (
+                              <span key={j}>{part}</span>
+                            )
+                          )}
+                        </div>
+                      );
+                    }
+                    // Handle bullet points
+                    if (line.trim().startsWith('*') && !line.trim().startsWith('**')) {
+                      return (
+                        <div key={i} style={{ marginLeft: '20px', marginBottom: '4px', display: 'flex', gap: '8px' }}>
+                          <span style={{ color: '#7C3AED' }}>•</span>
+                          <span>{line.trim().substring(1).trim()}</span>
+                        </div>
+                      );
+                    }
+                    // Regular lines
+                    return line.trim() ? (
+                      <div key={i} style={{ marginBottom: '8px' }}>{line}</div>
+                    ) : (
+                      <div key={i} style={{ height: '8px' }} />
+                    );
+                  })}
+                </div>
               ) : (
                 <p style={{ fontSize: '16px', color: '#4B5563', lineHeight: '1.7' }}>Continue tracking your biomarkers to receive personalized AI insights.</p>
               )}
