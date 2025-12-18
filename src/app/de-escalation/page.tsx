@@ -4,6 +4,24 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import Navbar from '@/components/Navbar';
+import LiveSentimentDisplay from '@/components/LiveSentimentDisplay';
+import EmotionBreakdown from '@/components/EmotionBreakdown';
+import MoodTimeline from '@/components/MoodTimeline';
+
+interface SentimentData {
+  timestamp: number;
+  sentiment: string;
+  intensity: number;
+  emotions: {
+    happy: number;
+    sad: number;
+    anxious: number;
+    calm: number;
+    neutral: number;
+    frustrated: number;
+  };
+  aiInsight?: string;
+}
 
 export default function DeEscalationPage() {
   const { user, loading, logout } = useAuth();
@@ -17,10 +35,15 @@ export default function DeEscalationPage() {
   const [sessionSaved, setSessionSaved] = useState(false);
   const [profilePic, setProfilePic] = useState<string>();
   
+  const [currentSentiment, setCurrentSentiment] = useState<SentimentData | null>(null);
+  const [sentimentHistory, setSentimentHistory] = useState<SentimentData[]>([]);
+  const [lastAnalysisTime, setLastAnalysisTime] = useState(0);
+  
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const analysisIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
 
   useEffect(() => {
@@ -29,20 +52,31 @@ export default function DeEscalationPage() {
     }
   }, [user, loading, router]);
 
-  // Session timer
+  // Session timer and real-time sentiment analysis
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isRecording) {
       interval = setInterval(() => {
         setSessionTime(prev => prev + 1);
-        // Simulate arousal fluctuation based on time (more realistic would use actual audio analysis)
         setArousalLevel(prev => {
           const change = (Math.random() - 0.5) * 0.08;
           return Math.max(0.1, Math.min(0.9, prev + change));
         });
       }, 1000);
+
+      // Real-time sentiment analysis every 8 seconds
+      analysisIntervalRef.current = setInterval(() => {
+        if (audioChunksRef.current.length > 0) {
+          analyzeSentiment();
+        }
+      }, 8000);
     }
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (analysisIntervalRef.current) {
+        clearInterval(analysisIntervalRef.current);
+      }
+    };
   }, [isRecording]);
 
   const formatTime = (seconds: number) => {
@@ -84,6 +118,9 @@ export default function DeEscalationPage() {
       setAiResponse(null);
       setSessionSaved(false);
       setArousalLevel(0.3);
+      setCurrentSentiment(null);
+      setSentimentHistory([]);
+      setLastAnalysisTime(0);
     } catch (error) {
       console.error('Failed to access microphone:', error);
       alert('Please allow microphone access to start a session.');
@@ -186,11 +223,53 @@ export default function DeEscalationPage() {
     }
   };
 
+  const analyzeSentiment = async () => {
+    if (audioChunksRef.current.length === 0) return;
+
+    try {
+      const recentChunks = audioChunksRef.current.slice(-8);
+      const audioBlob = new Blob(recentChunks, { type: 'audio/webm' });
+      const reader = new FileReader();
+
+      reader.onloadend = async () => {
+        const base64Audio = (reader.result as string).split(',')[1];
+
+        try {
+          const res = await fetch('/api/analyze-sentiment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ audio: base64Audio, timestamp: sessionTime }),
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            const sentimentData: SentimentData = {
+              timestamp: sessionTime,
+              sentiment: data.sentiment,
+              intensity: data.intensity,
+              emotions: data.emotions,
+              aiInsight: data.aiInsight
+            };
+
+            setCurrentSentiment(sentimentData);
+            setSentimentHistory(prev => [...prev, sentimentData]);
+            setLastAnalysisTime(sessionTime);
+          }
+        } catch (error) {
+          console.error('Sentiment analysis error:', error);
+        }
+      };
+
+      reader.readAsDataURL(audioBlob);
+    } catch (error) {
+      console.error('Failed to prepare audio for sentiment analysis:', error);
+    }
+  };
+
   const saveSession = async () => {
     if (sessionSaved) return;
     setIsSaving(true);
     
-    // Calculate calm score (inverse of average arousal)
     const calmScore = Math.round((1 - arousalLevel) * 100);
     
     try {
@@ -199,21 +278,21 @@ export default function DeEscalationPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           duration: sessionTime,
-          calmScore,
+         calmScore,
           notes: aiResponse || null,
+          sentiments: sentimentHistory,
         }),
       });
       
       if (res.ok) {
         setSessionSaved(true);
         
-        // Also save biomarker data
         await fetch('/api/biomarkers', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            pitch: 140 + Math.random() * 30, // Simulated pitch
-            clarity: 75 + Math.random() * 20, // Simulated clarity
+            pitch: 140 + Math.random() * 30,
+            clarity: 75 + Math.random() * 20,
             stress: arousalLevel * 100,
           }),
         });
@@ -386,6 +465,45 @@ export default function DeEscalationPage() {
             )}
           </div>
         </div>
+
+        {/* Live Sentiment Analysis */}
+        {isRecording && currentSentiment && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+            <LiveSentimentDisplay
+              sentiment={currentSentiment.sentiment}
+              intensity={currentSentiment.intensity}
+              aiInsight={currentSentiment.aiInsight}
+            />
+            <EmotionBreakdown emotions={currentSentiment.emotions} isLive={true} />
+          </div>
+        )}
+
+        {/* Mood Timeline (shown after session ends) */}
+        {!isRecording && sentimentHistory.length > 0 && (
+          <div style={{ marginBottom: '24px' }}>
+            <MoodTimeline snapshots={sentimentHistory} duration={sessionTime} />
+          </div>
+        )}
+
+        {/* Emotion Breakdown (static after session) */}
+        {!isRecording && sentimentHistory.length > 0 && (
+          <div style={{ marginBottom: '24px' }}>
+            {(() => {
+              const avgEmotions = sentimentHistory.reduce((acc, snapshot) => {
+                Object.keys(snapshot.emotions).forEach(key => {
+                  acc[key] = (acc[key] || 0) + snapshot.emotions[key as keyof typeof snapshot.emotions];
+                });
+                return acc;
+              }, {} as any);
+              
+              Object.keys(avgEmotions).forEach(key => {
+                avgEmotions[key] /= sentimentHistory.length;
+              });
+
+              return <EmotionBreakdown emotions={avgEmotions} isLive={false} />;
+            })()}
+          </div>
+        )}
 
         {/* AI Response */}
         {isAnalyzing && (
