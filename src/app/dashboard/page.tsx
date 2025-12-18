@@ -23,6 +23,25 @@ interface Activity {
   result: string;
 }
 
+interface SentimentData {
+  avgEmotions: {
+    happy: number;
+    sad: number;
+    anxious: number;
+    calm: number;
+    neutral: number;
+    frustrated: number;
+  };
+  dominantMood: string;
+  emotionalStability: number;
+  recentSessions: Array<{
+    date: string;
+    dominantMood: string;
+    emotionalScore: number;
+    moodChanges: number;
+  }>;
+}
+
 export default function DashboardPage() {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
@@ -31,6 +50,7 @@ export default function DashboardPage() {
   const [userName, setUserName] = useState('User');
   const [loadingData, setLoadingData] = useState(true);
   const [profilePic, setProfilePic] = useState<string | undefined>();
+  const [sentimentData, setSentimentData] = useState<SentimentData | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -53,6 +73,7 @@ export default function DashboardPage() {
         setStats(data.stats);
         setActivity(data.activity || []);
         setUserName(data.userName || 'User');
+        setSentimentData(data.sentimentData || null);
       }
     } catch (error) {
       console.error('Failed to fetch stats:', error);
@@ -170,9 +191,9 @@ export default function DashboardPage() {
               {/* Circular Progress Charts */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '32px' }}>
                 <CircularProgress
-                  percentage={stats?.avgCalmScore || 62}
-                  label="Communication"
-                  description="conversation clarity"
+                  percentage={sentimentData?.emotionalStability || stats?.avgCalmScore || 62}
+                  label="Emotional Stability"
+                  description="positive mood patterns"
                   color="purple"
                 />
                 <CircularProgress percentage={81} label="Empathy" description="client engagement" color="pink" />
@@ -193,24 +214,40 @@ export default function DashboardPage() {
                 Emotional Analysis
               </h2>
 
-              <EmotionScale emoji="H" label="Happy" percentage={78} frequency="4 minutes" color="#7C3AED" />
-              <EmotionScale emoji="N" label="Neutral" percentage={45} frequency="2 minutes" color="#EC4899" />
-              <EmotionScale emoji="S" label="Sad" percentage={12} frequency="30 seconds" color="#06B6D4" />
-              <EmotionScale emoji="F" label="Frustrated" percentage={8} frequency="15 seconds" color="#F59E0B" />
+              {sentimentData ? (
+                <>
+                  <EmotionScale emoji="😊" label="Happy" percentage={Math.round(sentimentData.avgEmotions.happy * 100)} color="#10B981" />
+                  <EmotionScale emoji="😌" label="Calm" percentage={Math.round(sentimentData.avgEmotions.calm * 100)} color="#06B6D4" />
+                  <EmotionScale emoji="😐" label="Neutral" percentage={Math.round(sentimentData.avgEmotions.neutral * 100)} color="#6B7280" />
+                  <EmotionScale emoji="😰" label="Anxious" percentage={Math.round(sentimentData.avgEmotions.anxious * 100)} color="#F59E0B" />
+                  <EmotionScale emoji="😔" label="Sad" percentage={Math.round(sentimentData.avgEmotions.sad * 100)} color="#3B82F6" />
+                  <EmotionScale emoji="😤" label="Frustrated" percentage={Math.round(sentimentData.avgEmotions.frustrated * 100)} color="#EF4444" />
+                </>
+              ) : (
+                <div style={{ padding: '20px', textAlign: 'center', color: '#6B7280' }}>
+                  Complete a therapy session with sentiment analysis to see your emotional patterns
+                </div>
+              )}
             </div>
           </div>
 
           {/* Right Column - Live Stats Panel */}
           <div>
             <LiveStatsPanel
-              currentMood="Engaged"
+              currentMood={(sentimentData?.dominantMood && sentimentData.dominantMood.charAt(0).toUpperCase() + sentimentData.dominantMood.slice(1)) || "Engaged"}
               moodEmoji=""
               stats={[
-                { label: 'Speaking time', value: `${stats?.sessionCount || 0} mins` },
-                { label: 'Engagement', value: `${stats?.avgCalmScore || 0}%` }
+                { label: 'Sessions', value: `${stats?.sessionCount || 0}` },
+                { label: 'Emotional Stability', value: `${sentimentData?.emotionalStability || stats?.avgCalmScore || 0}%` }
               ]}
-              recommendations={[
-                { type: 'info', message: "Allow the patient more time to talk", timestamp: "2 min ago" }
+              recommendations={sentimentData?.recentSessions && sentimentData.recentSessions.length > 0 ? [
+                { 
+                  type: 'info', 
+                  message: `Recent mood: ${sentimentData.recentSessions[0]?.dominantMood}`, 
+                  timestamp: "Latest session" 
+                }
+              ] : [
+                { type: 'info', message: "Complete a session to see mood insights", timestamp: "" }
               ]}
             />
           </div>
