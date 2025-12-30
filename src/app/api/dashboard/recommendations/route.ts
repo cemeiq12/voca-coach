@@ -6,9 +6,17 @@ import type { DashboardRecommendation } from '@/types/dashboard';
 
 interface TodaySummary {
   sessionsCompleted: number;
+  targetSessions: number;
   journalEntries: number;
+  minutesPracticed: number;
   moodAverage: number | null;
   focusArea: string;
+  focusDescription: string;
+  exercises: Array<{
+    id: string;
+    title: string;
+    completed: boolean;
+  }>;
 }
 
 // Cache recommendations per user for 1 hour
@@ -174,11 +182,20 @@ async function calculateTodaySummary(userId: string, today: Date): Promise<Today
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const [todaySessions, todayJournals] = await Promise.all([
+  // Get last 7 days for target calculation
+  const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  const [todaySessions, todayDeEscalationSessions, todayJournals, weekSessions, weekDeEscalationSessions] = await Promise.all([
     prisma.session.findMany({
       where: {
         userId,
         createdAt: { gte: today, lt: tomorrow }
+      }
+    }),
+    prisma.deEscalationSession.findMany({
+      where: {
+        userId,
+        startTime: { gte: today, lt: tomorrow }
       }
     }),
     prisma.journalEntry.count({
@@ -186,8 +203,33 @@ async function calculateTodaySummary(userId: string, today: Date): Promise<Today
         userId,
         createdAt: { gte: today, lt: tomorrow }
       }
+    }),
+    prisma.session.findMany({
+      where: {
+        userId,
+        createdAt: { gte: sevenDaysAgo, lt: tomorrow }
+      }
+    }),
+    prisma.deEscalationSession.findMany({
+      where: {
+        userId,
+        startTime: { gte: sevenDaysAgo, lt: tomorrow }
+      }
     })
   ]);
+
+  // Calculate total sessions completed today
+  const sessionsCompleted = todaySessions.length + todayDeEscalationSessions.length;
+
+  // Calculate minutes practiced today (convert seconds to minutes)
+  const regularMinutes = todaySessions.reduce((sum, s) => sum + s.duration, 0) / 60;
+  const deEscalationMinutes = todayDeEscalationSessions.reduce((sum, s) => sum + (s.duration || 0), 0) / 60;
+  const minutesPracticed = Math.round(regularMinutes + deEscalationMinutes);
+
+  // Calculate target sessions based on weekly average (or default to 2)
+  const totalWeekSessions = weekSessions.length + weekDeEscalationSessions.length;
+  const avgDailySessions = totalWeekSessions / 7;
+  const targetSessions = Math.max(2, Math.round(avgDailySessions * 1.1)); // 10% improvement over average
 
   const avgMood = todaySessions.length > 0
     ? Math.round(todaySessions.reduce((sum, s) => sum + (s.emotionalScore || 50), 0) / todaySessions.length)
@@ -195,19 +237,67 @@ async function calculateTodaySummary(userId: string, today: Date): Promise<Today
 
   // Determine focus area based on recent activity
   let focusArea = 'Mindfulness';
-  if (todaySessions.length === 0) {
+  let focusDescription = 'Practice present-moment awareness and emotional grounding techniques.';
+  let exercises: Array<{ id: string; title: string; completed: boolean }> = [];
+
+  if (sessionsCompleted === 0) {
     focusArea = 'De-escalation Practice';
+    focusDescription = 'Build your emotional resilience through guided de-escalation exercises.';
+    exercises = [
+      { id: 'ex-1', title: 'Complete a de-escalation session', completed: false },
+      { id: 'ex-2', title: 'Practice breathing techniques', completed: false },
+      { id: 'ex-3', title: 'Identify stress triggers', completed: todayJournals > 0 },
+    ];
   } else if (todayJournals === 0) {
     focusArea = 'Reflective Journaling';
+    focusDescription = 'Process your emotions and track your mental wellness through journaling.';
+    const hasBiomarker = await prisma.biomarker.count({
+      where: { userId, date: { gte: today, lt: tomorrow } }
+    }) > 0;
+    exercises = [
+      { id: 'ex-1', title: 'Write a journal entry', completed: false },
+      { id: 'ex-2', title: 'Identify cognitive distortions', completed: false },
+      { id: 'ex-3', title: 'Complete voice analysis', completed: hasBiomarker },
+    ];
   } else if (avgMood && avgMood < 50) {
     focusArea = 'Stress Management';
+    focusDescription = 'Develop healthy coping strategies to navigate challenging emotions.';
+    const hasDeEscalationToday = todayDeEscalationSessions.length > 0;
+    const hasBiomarker = await prisma.biomarker.count({
+      where: { userId, date: { gte: today, lt: tomorrow } }
+    }) > 0;
+    exercises = [
+      { id: 'ex-1', title: 'Practice de-escalation techniques', completed: hasDeEscalationToday },
+      { id: 'ex-2', title: 'Journal about your feelings', completed: todayJournals > 0 },
+      { id: 'ex-3', title: 'Track stress with biomarkers', completed: hasBiomarker },
+    ];
+  } else {
+    // Default mindfulness exercises
+    const hasPersonaChat = await prisma.personaConversation.count({
+      where: {
+        userId,
+        createdAt: { gte: today, lt: tomorrow }
+      }
+    }) > 0;
+    const hasBiomarker = await prisma.biomarker.count({
+      where: { userId, date: { gte: today, lt: tomorrow } }
+    }) > 0;
+    exercises = [
+      { id: 'ex-1', title: 'Practice mindful breathing', completed: todayDeEscalationSessions.length > 0 },
+      { id: 'ex-2', title: 'Engage in reflective conversation', completed: hasPersonaChat },
+      { id: 'ex-3', title: 'Monitor your voice wellness', completed: hasBiomarker },
+    ];
   }
 
   return {
-    sessionsCompleted: todaySessions.length,
+    sessionsCompleted,
+    targetSessions,
     journalEntries: todayJournals,
+    minutesPracticed,
     moodAverage: avgMood,
-    focusArea
+    focusArea,
+    focusDescription,
+    exercises
   };
 }
 

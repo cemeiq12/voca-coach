@@ -116,6 +116,7 @@ async function getWeeklyProgress(userId: string): Promise<WeeklyProgressData> {
   const sessions: number[] = [];
   const journalEntries: number[] = [];
   const moodTrend: number[] = [];
+  const engagement: number[] = [];
 
   // Get data for last 7 days
   for (let i = 6; i >= 0; i--) {
@@ -145,6 +146,31 @@ async function getWeeklyProgress(userId: string): Promise<WeeklyProgressData> {
       ? Math.round(daySessions.reduce((sum, s) => sum + (s.emotionalScore || 50), 0) / daySessions.length)
       : 50;
     moodTrend.push(avgMood);
+
+    // Calculate engagement score for the day
+    // Based on: sessions completed, journals written, biomarker checks
+    const [deEscalationCount, biomarkerCount, personaCount] = await Promise.all([
+      prisma.deEscalationSession.count({
+        where: { userId, startTime: { gte: dayStart, lte: dayEnd } }
+      }),
+      prisma.biomarker.count({
+        where: { userId, date: { gte: dayStart, lte: dayEnd } }
+      }),
+      prisma.personaConversation.count({
+        where: { userId, createdAt: { gte: dayStart, lte: dayEnd } }
+      })
+    ]);
+
+    // Calculate engagement: sessions (30%), journals (25%), de-escalation (20%), biomarkers (15%), persona (10%)
+    const totalActivities = sessionCount + deEscalationCount + journalCount + biomarkerCount + personaCount;
+    const engagementScore = Math.min(100, Math.round(
+      (sessionCount * 30 / 2) +
+      (journalCount * 25 / 1) +
+      (deEscalationCount * 20 / 1) +
+      (biomarkerCount * 15 / 1) +
+      (personaCount * 10 / 1)
+    ));
+    engagement.push(engagementScore);
   }
 
   // Calculate week-over-week improvement
@@ -162,7 +188,7 @@ async function getWeeklyProgress(userId: string): Promise<WeeklyProgressData> {
     ? Math.round(((thisWeekSessions - lastWeekSessions) / lastWeekSessions) * 100)
     : thisWeekSessions > 0 ? 100 : 0;
 
-  return { sessions, journalEntries, moodTrend, improvement };
+  return { sessions, journalEntries, moodTrend, engagement, improvement };
 }
 
 // Helper function to get upcoming therapy sessions

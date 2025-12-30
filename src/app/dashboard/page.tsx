@@ -69,14 +69,16 @@ export default function DashboardPage() {
       const res = await fetch('/api/dashboard/recommendations');
       if (res.ok) {
         const data = await res.json();
+        console.log('Recommendations API Response:', data);
         setAiRecommendations(data.recommendations || []);
         if (data.todaySummary) {
-          setTodaySummary({
-            ...data.todaySummary,
-            targetSessions: 3,
-            minutesPracticed: 0
-          });
+          console.log('Today Summary:', data.todaySummary);
+          setTodaySummary(data.todaySummary);
+        } else {
+          console.warn('No todaySummary in response');
         }
+      } else {
+        console.error('Recommendations API error:', res.status, await res.text());
       }
     } catch (error) {
       console.error('Failed to fetch recommendations:', error);

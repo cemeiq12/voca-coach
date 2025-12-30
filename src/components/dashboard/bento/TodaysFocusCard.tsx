@@ -150,44 +150,46 @@ export default function TodaysFocusCard({
         </motion.p>
 
         {/* Progress */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            marginBottom: '16px',
-          }}
-        >
-          <div style={{
-            flex: 1,
-            height: '6px',
-            background: 'rgba(255, 255, 255, 0.6)',
-            borderRadius: '3px',
-            overflow: 'hidden',
-          }}>
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${(completedCount / exercises.length) * 100}%` }}
-              transition={{ delay: 0.5, duration: 0.5, ease: 'easeOut' }}
-              style={{
-                height: '100%',
-                background: 'linear-gradient(90deg, #7AB89E, #D9A299)',
-                borderRadius: '3px',
-              }}
-            />
-          </div>
-          <span style={{
-            fontSize: '13px',
-            fontWeight: '600',
-            color: '#6B6B6B',
-            whiteSpace: 'nowrap',
-          }}>
-            {completedCount} of {exercises.length}
-          </span>
-        </motion.div>
+        {exercises.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: '16px',
+            }}
+          >
+            <div style={{
+              flex: 1,
+              height: '6px',
+              background: 'rgba(255, 255, 255, 0.6)',
+              borderRadius: '3px',
+              overflow: 'hidden',
+            }}>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${(completedCount / exercises.length) * 100}%` }}
+                transition={{ delay: 0.5, duration: 0.5, ease: 'easeOut' }}
+                style={{
+                  height: '100%',
+                  background: 'linear-gradient(90deg, #7AB89E, #D9A299)',
+                  borderRadius: '3px',
+                }}
+              />
+            </div>
+            <span style={{
+              fontSize: '13px',
+              fontWeight: '600',
+              color: '#6B6B6B',
+              whiteSpace: 'nowrap',
+            }}>
+              {completedCount} of {exercises.length}
+            </span>
+          </motion.div>
+        )}
 
         {/* Exercises checklist */}
         <div style={{
@@ -196,8 +198,18 @@ export default function TodaysFocusCard({
           flexDirection: 'column',
           gap: '10px',
         }}>
-          <AnimatePresence>
-            {exercises.map((exercise, index) => (
+          {exercises.length === 0 ? (
+            <div style={{
+              padding: '20px',
+              textAlign: 'center',
+              color: '#9B9B9B',
+              fontSize: '14px',
+            }}>
+              Loading your personalized exercises...
+            </div>
+          ) : (
+            <AnimatePresence>
+              {exercises.map((exercise, index) => (
               <motion.div
                 key={exercise.id}
                 initial={{ opacity: 0, x: -20 }}
@@ -272,6 +284,7 @@ export default function TodaysFocusCard({
               </motion.div>
             ))}
           </AnimatePresence>
+          )}
         </div>
 
         {/* Decorative shape */}

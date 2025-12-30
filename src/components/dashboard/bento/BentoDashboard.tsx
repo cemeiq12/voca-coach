@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, useReducedMotion } from 'framer-motion';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import BentoGrid from './BentoGrid';
 import WelcomeBanner from './WelcomeBanner';
 import ProgressRingCard from './ProgressRingCard';
@@ -65,11 +65,26 @@ export default function BentoDashboard({
   onBookTherapist,
 }: BentoDashboardProps) {
   const shouldReduceMotion = useReducedMotion();
-  const [exercises, setExercises] = useState([
-    { id: '1', title: 'Practice active listening', completed: false },
-    { id: '2', title: 'Reflective journaling', completed: true },
-    { id: '3', title: 'Empathy exercise', completed: false },
-  ]);
+
+  // Default exercises if todaySummary is not loaded
+  const defaultExercises = [
+    { id: 'ex-1', title: 'Complete a wellness activity', completed: false },
+    { id: 'ex-2', title: 'Practice mindfulness', completed: false },
+    { id: 'ex-3', title: 'Track your progress', completed: false },
+  ];
+
+  const [exercises, setExercises] = useState(
+    todaySummary?.exercises && todaySummary.exercises.length > 0
+      ? todaySummary.exercises
+      : defaultExercises
+  );
+
+  // Update exercises when todaySummary changes
+  useEffect(() => {
+    if (todaySummary?.exercises && todaySummary.exercises.length > 0) {
+      setExercises(todaySummary.exercises);
+    }
+  }, [todaySummary]);
 
   // Transform data for components
   const mainProgress = useMemo(() => {
@@ -110,7 +125,7 @@ export default function BentoDashboard({
       day,
       mood: weeklyProgress.moodTrend[i] || 0,
       sessions: weeklyProgress.sessions[i] || 0,
-      engagement: Math.round(Math.random() * 40 + 60), // Simulated engagement data
+      engagement: weeklyProgress.engagement?.[i] || 0,
     }));
   }, [weeklyProgress]);
 
@@ -175,8 +190,8 @@ export default function BentoDashboard({
 
           {/* Today's Focus */}
           <TodaysFocusCard
-            focusArea={todaySummary?.focusArea || 'Active Listening'}
-            description="Focus on building stronger connections through mindful listening and empathetic responses."
+            focusArea={todaySummary?.focusArea || 'Mindfulness'}
+            description={todaySummary?.focusDescription || 'Focus on building your mental wellness through daily practice.'}
             exercises={exercises}
             onToggleExercise={handleToggleExercise}
           />

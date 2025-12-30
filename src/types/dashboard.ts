@@ -11,6 +11,7 @@ export interface WeeklyProgressData {
   sessions: number[];        // Last 7 days session counts
   journalEntries: number[];  // Last 7 days journal counts
   moodTrend: number[];       // Last 7 days avg mood (0-100)
+  engagement: number[];      // Last 7 days engagement scores (0-100)
   improvement: number;       // Week-over-week % change
 }
 
@@ -81,6 +82,12 @@ export interface TodaySummary {
   minutesPracticed: number;
   moodAverage: number | null;
   focusArea: string;
+  focusDescription: string;
+  exercises: Array<{
+    id: string;
+    title: string;
+    completed: boolean;
+  }>;
 }
 
 export interface EnhancedStatsResponse {
